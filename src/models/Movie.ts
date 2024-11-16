@@ -1,0 +1,35 @@
+import mongoose, { Document, Schema } from "mongoose";
+import * as yup from "yup";
+import type { ICategory } from "./Category";
+
+interface IMovie extends Document {
+  title: string;
+  description: string;
+  releaseDate: string;
+  category: ICategory;
+  screenshots: string[];
+  downloadLinks: string[];
+  status: "active" | "inactive";
+}
+
+const schema: Schema = new Schema({
+  title: { type: String, required: true },
+  description: { type: String, required: true },
+  releaseDate: { type: Number, required: true },
+  category: { type: Schema.Types.ObjectId, ref: "Category", required: true },
+  screenshots: { type: [String], required: true },
+  downloadLinks: { type: [String], required: true },
+  status: { type: String, enum: ["active", "inactive"], default: "active" },
+});
+
+const Movie = mongoose.model<IMovie>("Movie", schema);
+
+export default Movie;
+
+export const movieValidationSchema = yup.object().shape({
+  title: yup.string().required(),
+  description: yup.string().required(),
+  releaseDate: yup.number().required(),
+  category: yup.string().required(), // Assuming category is an ObjectId in string format
+  downloadLinks: yup.array().of(yup.string().url()).required(),
+});

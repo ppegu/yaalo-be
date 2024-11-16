@@ -2,14 +2,29 @@
   "name": "movie-scraper",
   "module": "src/index.ts",
   "type": "module",
+  "scripts": {
+    "dev": "bun --watch src/index.ts",
+    "collector": "bun src/collector/index.ts"
+  },
   "devDependencies": {
-    "@types/bun": "latest"
+    "@types/bun": "latest",
+    "@types/express": "^5.0.0",
+    "@types/multer": "^1.4.12"
   },
   "peerDependencies": {
     "typescript": "^5.0.0"
   },
   "dependencies": {
+    "@azure/storage-blob": "^12.25.0",
+    "@ppegu/mongoose-extras": "^1.0.2-beta-07",
+    "axios": "^1.7.7",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.1",
+    "mongoose": "^8.8.1",
+    "multer": "^1.4.5-lts.1",
     "playwright": "^1.48.2",
-    "puppeteer": "^23.7.1"
+    "puppeteer": "^23.7.1",
+    "uuid": "^11.0.3",
+    "yup": "^1.4.0"
   }
 }
