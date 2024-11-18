@@ -262,6 +262,7 @@ async function main() {
     headless: true,
     defaultViewport: null,
     timeout: 60000 * 2,
+    args: ["--no-sandbox", "--disable-setuid-sandbox"],
   });
   console.log("Browser launched.");
 
