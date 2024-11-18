@@ -1,5 +1,8 @@
-import { uploadUrlToAzure } from "../utils/azure.util";
+import { v4 } from "uuid";
+import { uploadFileToGithub } from "../utils/github.util";
 import Logger from "../utils/Logger";
+import { downloadFileFromURL } from "../utils/download.util";
+import Movie from "../models/Movie";
 
 export type MovieDetails = {
   bannerLink: string;
@@ -26,12 +29,29 @@ export async function uploadMovieFromCollector(movieDetails: MovieDetails) {
     return;
   }
 
-  const azureUrl = await uploadUrlToAzure(
-    "movies",
-    downloadLink,
-    imdbDetails.title,
-    imdbDetails.title
-  );
+  const uploadUUID = v4();
 
-  logger.log("Movie uploaded to Azure", { azureUrl });
+  const filePath =
+    "/Users/ppegu/Projects/Yaalo/yaalo-be/tmp/8e8bcc7b-0106-4795-aa18-c697f6897c30";
+
+  logger.log("file downloaded", { filePath, uploadUUID });
+
+  const repo = `ffegu0418/${uploadUUID}`;
+
+  await uploadFileToGithub(repo, filePath);
+
+  // now store info in db
+
+  logger.log("storaing movie to db", { title: imdbDetails.title });
+
+  const movie = new Movie({
+    title: imdbDetails.title,
+    description: imdbDetails.description,
+    releaseDate: imdbDetails.releaseDate,
+    downloadLinks: [{ type: "git", url: repo }],
+    screenshots: movieDetails.screenshots,
+    status: "active",
+  });
+
+  await movie.save();
 }

@@ -1,8 +1,9 @@
+import axios from "axios";
 import { sleep } from "bun";
+import dotenv from "dotenv";
 import type { Browser, Page } from "puppeteer";
 import puppeteer from "puppeteer";
-import axios from "axios";
-import dotenv from "dotenv";
+import { connectToDatabase } from "../utils/database.util";
 import { uploadMovieFromCollector } from "./upload.collector";
 
 dotenv.config();
@@ -254,6 +255,8 @@ async function handleSinglePostDownload(
 }
 
 async function main() {
+  await connectToDatabase();
+
   console.log("Launching browser...");
   const browser = await puppeteer.launch({
     headless: true,
@@ -268,9 +271,29 @@ async function main() {
       "https://imgshare.xyz/img/1/673736c2550a331767be76b1/photo_2024-11-15_03-53-58.jpg",
   };
 
-  const movieDetails = await handleSinglePostDownload(browser, link);
+  // const movieDetails = await handleSinglePostDownload(browser, link);
 
-  console.log("Movie details:", movieDetails);
+  const movieDetails = {
+    bannerLink:
+      "https://imgshare.xyz/img/1/673736c2550a331767be76b1/photo_2024-11-15_03-53-58.jpg",
+    downloadLink:
+      "https://video-downloads.googleusercontent.com/ADGPM2n67QDNJHidPIgFKJaisTUXVjxI4esPtYF70YNgsN3aUaWPOG-9AHhVED9snewMy0T4NpROlKWNNPUBi1P09sTfps5vHUcoBnFxHnsO_H6alWhwipKp2MlowccU261UxQa5xEJX1d2NJd1vueJvRHhDeEGbgMy-YY0ZjyuWz3nFFHJQlWMrjtw1cHqGDZv-elDVRHn7sBTjE0b2BaDjz-aEWaFNlBAG44fw9JgcdPQWr2AaqDAo-7S2-mxP7TalDRWXIvJo50Pzy5IM_XiTphsKqo81RfPWmlzT-iv_GpgTKyLFb-6bKP6MnBfMwku3HMy1L0B4t-Q2bxA_C91YX3bko7I-R0UlsqQNkcawbGZbzmiFR7sioB69O-9v1Z4tokbwAN0_CLhQ6ZRwvqsOtxu4VMfWBzWNC7nVsJ0YEc8Sq8jFiMIzU9yQodn-wM2tBy5I6S7FWomBA28CSRvLUuDgC-gL3QsC6e9qxHXGHR_V_1u2bxizEMtDJsordoXKIqJ2bdJ-6819rXamIcGbswVt0edGh5mB-vKnUY5wX-y94sdakZ7W3lC2dalrLijaGWp2xza9P2isGu6DcDOI3U59WNvw-raPr5YjsuTzLDUGQXxUg6iR99wpGkSNvyy8ddd2KQD_HA7jVq3yiXjnIfQLHnTZhm7UwB4Ijs-KPs_JUjKHM7ADZYWnYlJsIlhnhFVIs3vphCvOl6INIlTxQSspjM0tBIbrGy_fKq1Em9sJcTw2kkbZ0xrHD-HDAvAEVQiArHvLoZa390rgnM5Xy3wjKHRtg1hvwQMlns1BBWmXpwRpe2iTLMxAre5o_JO0tCQheLMrmN2SgTCuL_gPEb7VYI2w5aKZFLHvtRB1jiKl-EljcgCHWDGnyvNBPpZAiVxIZhjlvp637yOwVH5DaTDnO0Sm9D4CZDbXpdWblsVeIopDzOPly4gmHn7p9qY9X6fiHUojOS9wAA-KRblXCRrBxZ_qzf0PnWDvpK9Us_DQQnHBRk1CpfJ1l5T2zEY2ejbvNcHgWJTrCNz9jUy4tcmao2CoxRS_T_Rk5KpB4QsZ2zRkyyCos1KWQcPYLG-GIWlLiIJT",
+    screenshots: [
+      "https://imgshare.xyz/img/3/67377dfe550a331767be76cb/Snapshot_1.jpg",
+      "https://imgshare.xyz/img/5/67377dfc550a331767be76c8/Snapshot_2.jpg",
+      "https://imgshare.xyz/img/2/67377dfd550a331767be76ca/Snapshot_5.jpg",
+      "https://imgshare.xyz/img/1/67377dfe550a331767be76cc/Snapshot_6.jpg",
+      "https://imgshare.xyz/img/4/67377dfd550a331767be76c9/Snapshot_7.jpg",
+    ],
+    imdbDetails: {
+      title: "Apne Ghar Begane",
+      description:
+        "Gurdev Singh, living in Canada with his son’s family, leaves for Punjab after a misunderstanding with his daughter-in-law Monica. The family reconciles at a Gurdwara, reuniting emotionally and restoring peace.",
+      releaseDate: "2024-11-15",
+    },
+  };
+
+  // console.log("Movie details:", movieDetails);
 
   await browser.close();
 
