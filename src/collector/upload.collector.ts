@@ -1,5 +1,5 @@
 import { v4 } from "uuid";
-import { uploadFileToGithub } from "../utils/github.util";
+import { uploadFileToGithub } from "../utils/github.util.js";
 import Logger from "../utils/Logger";
 import { downloadFileFromURL } from "../utils/download.util";
 import Movie from "../models/Movie";
@@ -29,15 +29,16 @@ export async function uploadMovieFromCollector(movieDetails: MovieDetails) {
     return;
   }
 
-  const uploadUUID = "8315a8b8-3159-4781-a620-2650ac9a6fa1";
+  // const uploadUUID = "8315a8b8-3159-4781-a620-2650ac9a6fa1";
+  const uploadUUID = v4();
 
-  // const filePath = await downloadFileFromURL(downloadLink, uploadUUID);
+  const filePath = await downloadFileFromURL(downloadLink, uploadUUID);
 
-  // logger.log("file downloaded", { filePath, uploadUUID });
+  logger.log("file downloaded", { filePath, uploadUUID });
 
   const repo = `ffegu0418/${uploadUUID}`;
 
-  // await uploadFileToGithub(repo, filePath);
+  await uploadFileToGithub(repo, filePath);
 
   // now store info in db
 

@@ -10,29 +10,37 @@ const indexRouteFormat = /^index\.route\..*$/;
 
 let routeCounts = 0;
 
+function registerRoutes(file: string, fullPath: string, basePath: string = "") {
+  try {
+    let routePath = `${basePath}/${file.replace(/.route\..*$/, "")}`;
+
+    if (indexRouteFormat.test(file)) {
+      routePath = basePath;
+    }
+    const relativePath = "./".concat(path.relative(__dirname, fullPath));
+
+    const route = require(relativePath);
+
+    router.use(routePath, route.default ? route.default : route);
+    routeCounts++;
+  } catch (error: any) {
+    throw error;
+  }
+}
+
 const loadRoutes = (dir: string, basePath: string = "") => {
-  fs.readdirSync(dir).forEach((file) => {
+  const files = fs.readdirSync(dir);
+
+  for (const file of files) {
     const fullPath = path.join(dir, file);
     const stat = fs.statSync(fullPath);
+
     if (stat.isDirectory()) {
       loadRoutes(fullPath, `${basePath}/${file}`);
     } else if (routeFormat.test(file)) {
-      try {
-        let routePath = `${basePath}/${file.replace(routeFormat, "")}`;
-        if (indexRouteFormat.test(file)) {
-          routePath = basePath;
-        }
-
-        const relativePath = "./".concat(path.relative(__dirname, fullPath));
-        const route = require(relativePath);
-
-        router.use(routePath, route.default ? route.default : route);
-        routeCounts++;
-      } catch (error: any) {
-        console.error(`Error loading route ${fullPath}`, error?.message);
-      }
+      registerRoutes(file, fullPath, basePath);
     }
-  });
+  }
 };
 
 loadRoutes(__dirname);

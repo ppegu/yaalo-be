@@ -16,7 +16,6 @@ export async function downloadFileFromURL(
   console.log(`Starting download...`);
 
   const progressBar = new cliProgress.SingleBar({}, cliProgress.Presets.legacy);
-  progressBar.start(100, 0);
 
   return new Promise((resolve, reject) => {
     const file = fs.createWriteStream(filePath);
@@ -26,17 +25,20 @@ export async function downloadFileFromURL(
           response.headers["content-length"] || "0",
           10
         );
+
+        progressBar.start(totalSize, 0);
+
         let downloadedSize = 0;
 
         response.on("data", (chunk) => {
           downloadedSize += chunk.length;
-          const progress = ((downloadedSize / totalSize) * 100).toFixed(2);
+          const progress = downloadedSize;
           progressBar.update(Number(progress));
         });
 
         response.pipe(file);
         file.on("finish", () => {
-          console.log(`Download completed for ${filePath}`);
+          console.log(`\nDownload completed for ${filePath}`);
           file.close(() => resolve(filePath));
           progressBar.stop();
         });

@@ -12,15 +12,18 @@ interface IMovie {
   status: "active" | "inactive";
 }
 
-const schema: Schema = new Schema({
-  title: { type: String, required: true },
-  description: { type: String, required: true },
-  releaseDate: { type: String, required: true },
-  category: { type: Schema.Types.ObjectId, ref: "Category" },
-  screenshots: { type: [String], required: true },
-  downloadLinks: { type: [], required: true },
-  status: { type: String, enum: ["active", "inactive"], default: "active" },
-});
+const schema: Schema = new Schema(
+  {
+    title: { type: String, required: true },
+    description: { type: String, required: true },
+    releaseDate: { type: String, required: true },
+    category: { type: Schema.Types.ObjectId, ref: "Category" },
+    screenshots: { type: [String], required: true },
+    downloadLinks: { type: [], required: true },
+    status: { type: String, enum: ["active", "inactive"], default: "active" },
+  },
+  { timestamps: true }
+);
 
 const Movie = mongoose.model<IMovie>("Movie", schema);
 

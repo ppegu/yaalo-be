@@ -4,12 +4,8 @@ import express, {
   type Response,
 } from "express";
 import Movie from "../../models/Movie";
-import {
-  BadRequestError,
-  InternalServerError,
-  NotFoundError,
-} from "../../utils/response.util";
 import createMulterStorage from "../../utils/multer.util";
+import { NotFoundError } from "../../utils/response.util";
 
 const router = express.Router();
 
@@ -22,7 +18,7 @@ router.post("/", async (req: Request, res: Response, next: NextFunction) => {
     await newMovie.save();
     res.status(201).json(newMovie);
   } catch (error: any) {
-    next(new BadRequestError(error.message));
+    next(error);
   }
 });
 
@@ -32,7 +28,7 @@ router.get("/", async (_req: Request, res: Response, next: NextFunction) => {
     const movies = await Movie.find();
     res.json(movies);
   } catch (error: any) {
-    next(new InternalServerError(error.message));
+    next(error);
   }
 });
 
@@ -45,11 +41,7 @@ router.get("/:id", async (req: Request, res: Response, next: NextFunction) => {
     }
     res.json(movie);
   } catch (error: any) {
-    next(
-      error instanceof NotFoundError
-        ? error
-        : new InternalServerError(error.message)
-    );
+    next(error);
   }
 });
 
@@ -66,11 +58,7 @@ router.put("/:id", async (req: Request, res: Response, next: NextFunction) => {
     }
     res.json(updatedMovie);
   } catch (error: any) {
-    next(
-      error instanceof NotFoundError
-        ? error
-        : new BadRequestError(error.message)
-    );
+    next(error);
   }
 });
 
@@ -85,11 +73,7 @@ router.delete(
       }
       res.status(204).send();
     } catch (error: any) {
-      next(
-        error instanceof NotFoundError
-          ? error
-          : new InternalServerError(error.message)
-      );
+      next(error);
     }
   }
 );
@@ -109,11 +93,7 @@ router.post(
       await movie.save();
       res.json(movie);
     } catch (error: any) {
-      next(
-        error instanceof NotFoundError
-          ? error
-          : new InternalServerError(error.message)
-      );
+      next(error);
     }
   }
 );

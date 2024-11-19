@@ -8,16 +8,32 @@ import { uploadMovieFromCollector } from "./upload.collector";
 
 dotenv.config();
 
+const MAX_DOWNLOAD_SIZE = 800;
+const MIN_DOWNLOAD_SIZE = 300;
+const MAX_UNIT = "MB";
+const MIN_UNIT = "MB";
+
 function selectDownloadableLink(sentences: string[]): number {
   const fileSizeRegex = /(\d+(?:\.\d+)?)(\s?(GB|MB))/i;
 
-  for (let i = 0; i < sentences.length; i++) {
-    const match = sentences[i].match(fileSizeRegex);
+  const cleanedSentences = sentences.map((sentence) =>
+    sentence.replace(/\s+/g, " ")
+  );
+
+  for (let i = 0; i < cleanedSentences.length; i++) {
+    const match = cleanedSentences[i].match(fileSizeRegex);
+
     if (match) {
       const size = parseFloat(match[1]);
       const unit = match[3].toUpperCase();
 
-      if ((unit === "GB" && size <= 2) || (unit === "MB" && size >= 800)) {
+      if (
+        unit === MAX_UNIT &&
+        size <= MAX_DOWNLOAD_SIZE &&
+        unit === MIN_UNIT &&
+        size >= MIN_DOWNLOAD_SIZE
+      ) {
+        console.log("unti:", unit, "size:", size);
         return i;
       }
     }
