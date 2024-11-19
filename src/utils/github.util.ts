@@ -8,7 +8,7 @@ import cliProgress from "cli-progress";
 dotenv.config();
 
 const GITHUB_TOKEN = process.env.GITHUB_ACCESS_TOKEN;
-const CHUNK_SIZE = 1024 * 1024; // 1 MB
+const CHUNK_SIZE = 2 * 1024 * 1024; // 2 MB
 
 const octokit = new Octokit({
   auth: GITHUB_TOKEN,
@@ -66,6 +66,8 @@ export async function deleteGithubRepo(repoName: string) {
 }
 
 export async function uploadFileToGithub(repoName: string, fileUrl: string) {
+  const progressBar = new cliProgress.SingleBar({}, cliProgress.Presets.legacy);
+
   try {
     logger.info(`Starting upload of file ${fileUrl} to repository ${repoName}`);
     await createGithubRepo(repoName, "Uploaded files");
@@ -80,10 +82,6 @@ export async function uploadFileToGithub(repoName: string, fileUrl: string) {
     let chunkIndex = 0;
     const chunkIds = [];
 
-    const progressBar = new cliProgress.SingleBar(
-      {},
-      cliProgress.Presets.legacy
-    );
     progressBar.start(100, 0);
 
     for await (const chunk of fileStream) {
@@ -110,7 +108,7 @@ export async function uploadFileToGithub(repoName: string, fileUrl: string) {
 
     const chunkIdsJson = JSON.stringify(chunkIds);
 
-    logger.info(`Uploading chunk IDs to repository ${repoName}`);
+    logger.info(`\nUploading chunk IDs to repository ${repoName}`);
     await octokit.repos.createOrUpdateFileContents({
       owner,
       repo,
@@ -123,6 +121,8 @@ export async function uploadFileToGithub(repoName: string, fileUrl: string) {
       `File ${fileUrl} uploaded successfully to repository ${repoName}`
     );
   } catch (error: any) {
+    progressBar.stop();
+
     logger.error(
       `Error uploading file ${fileUrl} to repository ${repoName}: ${error.message}`
     );

@@ -15,10 +15,10 @@ interface IMovie {
 const schema: Schema = new Schema({
   title: { type: String, required: true },
   description: { type: String, required: true },
-  releaseDate: { type: Number, required: true },
+  releaseDate: { type: String, required: true },
   category: { type: Schema.Types.ObjectId, ref: "Category" },
   screenshots: { type: [String], required: true },
-  downloadLinks: { type: [String], required: true },
+  downloadLinks: { type: [], required: true },
   status: { type: String, enum: ["active", "inactive"], default: "active" },
 });
 
@@ -30,5 +30,5 @@ export const movieValidationSchema = yup.object().shape({
   title: yup.string().required(),
   description: yup.string().required(),
   releaseDate: yup.number().required(),
-  downloadLinks: yup.array().of(yup.string().url()).required(),
+  downloadLinks: yup.array().required(),
 });

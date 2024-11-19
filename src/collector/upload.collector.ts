@@ -31,8 +31,7 @@ export async function uploadMovieFromCollector(movieDetails: MovieDetails) {
 
   const uploadUUID = v4();
 
-  const filePath =
-    "/Users/ppegu/Projects/Yaalo/yaalo-be/tmp/8e8bcc7b-0106-4795-aa18-c697f6897c30";
+  const filePath = await downloadFileFromURL(downloadLink, uploadUUID)
 
   logger.log("file downloaded", { filePath, uploadUUID });
 
