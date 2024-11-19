@@ -1,9 +1,9 @@
-import axios from "axios";
-import { sleep } from "bun";
 import dotenv from "dotenv";
 import type { Browser, Page } from "puppeteer";
 import puppeteer from "puppeteer";
 import { connectToDatabase } from "../utils/database.util";
+import { getMovieDetailsFromTmdb } from "../utils/tmdb.util";
+import { getHubcloudDownloadLink } from "./hubcloud.collector";
 import { uploadMovieFromCollector } from "./upload.collector";
 
 dotenv.config();
@@ -24,119 +24,6 @@ function selectDownloadableLink(sentences: string[]): number {
   }
 
   return -1;
-}
-
-async function getHubcloud10GbDownloadLink(browser: Browser) {
-  let pages = await browser.pages();
-  let downloadPage = pages[pages.length - 1];
-
-  const server10gbLink = await downloadPage.evaluate(() => {
-    const links = Array.from(document.querySelectorAll("a"));
-    const a = links.find((link) =>
-      link.innerText.includes("Download [Server : 10Gbps]")
-    );
-
-    return a?.href;
-  });
-
-  if (!server10gbLink) {
-    throw Error("Server 10gb link not found.");
-  }
-
-  console.log("Found 10gb link");
-
-  await downloadPage.close();
-
-  downloadPage = await browser.newPage();
-
-  await downloadPage.goto(server10gbLink, {
-    waitUntil: "networkidle2",
-  });
-
-  await downloadPage.waitForSelector("#downloadbtn");
-
-  await sleep(5000);
-
-  const finalLink = await downloadPage.evaluate(() => {
-    const links = Array.from(document.querySelectorAll("a"));
-    const button = links.find((link) =>
-      link.innerText.includes("Download Here")
-    );
-    return button?.href;
-  });
-
-  if (!finalLink) {
-    throw Error("VD button not found.");
-  }
-
-  await downloadPage.close();
-
-  return finalLink;
-}
-
-async function getHubcloudDownloadLink(browser: Browser, downloadUrl: string) {
-  const page = await browser.newPage();
-  await page.goto(downloadUrl, {
-    waitUntil: "networkidle2",
-  });
-
-  let pages = await browser.pages();
-
-  if (pages.length !== 2)
-    throw Error("Pages length is not 2. Something went wrong.");
-
-  let downloadPage = pages[pages.length - 1];
-
-  console.log("Download page url", downloadPage.url());
-
-  await downloadPage.waitForSelector("#download");
-
-  const downloadButton = await downloadPage.$("#download");
-
-  if (!downloadButton) {
-    console.log("Download button not found.");
-    return;
-  }
-
-  console.log("Download button found, initiating download...");
-
-  await downloadButton.evaluate(() => {
-    const downloadButton = document.getElementById("download");
-    downloadButton?.click();
-  });
-
-  // redirect expected
-  await downloadPage.waitForNavigation({ waitUntil: "networkidle2" });
-
-  const downloadLink = await getHubcloud10GbDownloadLink(browser);
-
-  return downloadLink;
-}
-
-async function getMovieDetailsFromTmdb(movieTitle: string) {
-  const apiKey = process.env.TMDB_API_KEY;
-
-  const searchUrl = `https://api.themoviedb.org/3/search/movie?api_key=${apiKey}&query=${encodeURIComponent(
-    movieTitle
-  )}`;
-  const searchResponse = await axios.get(searchUrl);
-  const searchData = searchResponse.data;
-
-  if (searchData.results.length === 0) {
-    console.error("Movie not found on TMDB.");
-    return;
-  }
-
-  const movieId = searchData.results[0].id;
-  const detailsUrl = `https://api.themoviedb.org/3/movie/${movieId}?api_key=${apiKey}`;
-  const detailsResponse = await axios.get(detailsUrl);
-  const movieDetails = detailsResponse.data;
-
-  return {
-    title: movieDetails?.original_title,
-    description: movieDetails?.overview,
-    releaseDate: movieDetails?.release_date,
-  };
 }
 
 async function extractMovieDetails(page: Page) {
@@ -225,21 +112,11 @@ async function handleSinglePostDownload(
   );
   console.log("Downloadable link hrefs:", downloadLinks);
 
-  const firstDownloadLink = downloadLinks[0];
-
   await page.close();
-
-  if (!firstDownloadLink) {
-    console.log("No download link found.");
-    return;
-  }
 
   console.log("Going to download link...");
 
-  const downloadLink = await getHubcloudDownloadLink(
-    browser,
-    firstDownloadLink
-  );
+  const downloadLink = await getHubcloudDownloadLink(browser, downloadLinks);
 
   if (!downloadLink) {
     console.log("Download link not found.");
@@ -261,7 +138,6 @@ async function main() {
   const browser = await puppeteer.launch({
     headless: true,
     defaultViewport: null,
-    timeout: 60000 * 2,
     args: ["--no-sandbox", "--disable-setuid-sandbox"],
   });
   console.log("Browser launched.");
