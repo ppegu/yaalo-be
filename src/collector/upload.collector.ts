@@ -5,7 +5,7 @@ import { downloadFileFromURL } from "../utils/download.util";
 import Movie from "../models/Movie";
 
 export type MovieDetails = {
-  bannerLink: string;
+  bannerLink?: string;
   downloadLink: string;
   screenshots: string[];
   imdbDetails:

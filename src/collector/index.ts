@@ -60,7 +60,7 @@ async function extractMovieDetails(page: Page) {
 
 async function handleSinglePostDownload(
   browser: Browser,
-  link: { href: string; bannerLink: string }
+  link: { href: string; bannerLink?: string }
 ) {
   const { href: url, bannerLink } = link;
 
@@ -158,29 +158,6 @@ async function main() {
   });
   console.log("Browser launched.");
 
-  const link = {
-    href: "https://1cinevood.cyou/apne-ghar-begane-2024-punjabi-predvd-1080p-x264-aac/",
-    bannerLink:
-      "https://imgshare.xyz/img/1/673736c2550a331767be76b1/photo_2024-11-15_03-53-58.jpg",
-  };
-
-  // const movieDetails = await handleSinglePostDownload(browser, link);
-
-  await browser.close();
-
-  await uploadMovieFromCollector({
-    imdbDetails: {
-      title: "Apne Ghar Begane",
-      description: "Punjabi movie",
-      releaseDate: "2024-11-15",
-    },
-    bannerLink: "",
-    downloadLink: "https://download",
-    screenshots: ["https://img1", "https://img2"],
-  });
-
-  process.exit(0);
-
   console.log("Opening new page...");
   const page = await browser.newPage();
   console.log("New page opened.");
@@ -216,10 +193,22 @@ async function main() {
 
   console.log("got pages: ", pages);
 
-  // for (const page of pages) {
-  //   await handleSinglePostDownload(browser, page);
-  //   break;
-  // }
+  for (const page of pages) {
+    const movieDetails = await handleSinglePostDownload(browser, {
+      href: page.href,
+      bannerLink: page.bannerLink,
+    });
+
+    if (!movieDetails) {
+      console.log("Movie details not found.");
+      continue;
+    }
+
+    await uploadMovieFromCollector(movieDetails);
+  }
+
+  console.log("Closing browser...");
+
   await browser.close();
 }
 
