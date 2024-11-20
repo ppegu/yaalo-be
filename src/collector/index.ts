@@ -164,11 +164,20 @@ async function main() {
       "https://imgshare.xyz/img/1/673736c2550a331767be76b1/photo_2024-11-15_03-53-58.jpg",
   };
 
-  const movieDetails = await handleSinglePostDownload(browser, link);
+  // const movieDetails = await handleSinglePostDownload(browser, link);
 
-  await browser.close();
+  // await browser.close();
 
-  await uploadMovieFromCollector(movieDetails!);
+  await uploadMovieFromCollector({
+    imdbDetails: {
+      title: "Apne Ghar Begane",
+      description: "Punjabi movie",
+      releaseDate: "2024-11-15",
+    },
+    bannerLink: "",
+    downloadLink: "https://download",
+    screenshots: ["https://img1", "https://img2"],
+  });
 
   return;
 

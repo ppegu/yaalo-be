@@ -29,10 +29,11 @@ export async function uploadMovieFromCollector(movieDetails: MovieDetails) {
     return;
   }
 
-  // const uploadUUID = "8315a8b8-3159-4781-a620-2650ac9a6fa1";
-  const uploadUUID = v4();
+  const uploadUUID = "b34cb8dd-9f58-48cf-89a3-a33ba6a55b99";
+  // const uploadUUID = v4();
 
-  const filePath = await downloadFileFromURL(downloadLink, uploadUUID);
+  const filePath =
+    "/Users/ppegu/Projects/Yaalo/yaalo-be/tmp/b34cb8dd-9f58-48cf-89a3-a33ba6a55b99";
 
   logger.log("file downloaded", { filePath, uploadUUID });
 

@@ -1,12 +1,12 @@
+import axios from "axios";
 import { Buffer } from "buffer";
 import cliProgress from "cli-progress";
 import * as dotenv from "dotenv";
 import type { Request, Response } from "express";
 import * as fs from "fs";
+import { Stream } from "stream";
 import { v4 as uuidv4 } from "uuid";
 import Logger from "./Logger";
-import { Stream } from "stream";
-import axios from "axios";
 
 dotenv.config();
 
@@ -75,6 +75,12 @@ export async function deleteGithubRepo(repoName: string) {
 export async function uploadFileToGithub(repoName: string, fileUrl: string) {
   const progressBar = new cliProgress.SingleBar({}, cliProgress.Presets.legacy);
 
+  let completed = false;
+
+  process.on("exit", () => {
+    console.log("exit");
+  });
+
   try {
     const octokit = new (await import("@octokit/rest")).Octokit({
       auth: GITHUB_TOKEN,
@@ -89,33 +95,37 @@ export async function uploadFileToGithub(repoName: string, fileUrl: string) {
       highWaterMark: CHUNK_SIZE,
     });
     const fileSize = fs.statSync(fileUrl).size;
+
     let uploadedSize = 0;
     let chunkIndex = 0;
+
     const chunkIds: { id: string; size: number }[] = [];
 
-    progressBar.start(100, 0);
+    progressBar.start(Number((fileSize / (1024 * 1024)).toFixed(2)), 0);
 
     for await (const chunk of fileStream) {
       const chunkId = uuidv4();
-
       const contentEncoded = chunk.toString("base64");
+
+      const path = `chunks/${chunkId}`;
 
       await octokit.repos.createOrUpdateFileContents({
         owner,
         repo,
-        path: `chunks/${chunkId}`,
+        path,
         message: `Upload chunk ${chunkIndex}`,
         content: contentEncoded,
       });
 
+      uploadedSize += chunk.length;
+
       chunkIds.push({ id: chunkId, size: uploadedSize });
 
-      uploadedSize += chunk.length;
-      const progress = ((uploadedSize / fileSize) * 100).toFixed(2);
+      progressBar.update(Number((uploadedSize / (1024 * 1024)).toFixed(2)));
 
-      progressBar.update(Number(progress));
       chunkIndex++;
     }
+
     progressBar.stop();
 
     const chunkIdsJson = JSON.stringify(chunkIds);
@@ -146,7 +156,11 @@ export async function uploadFileToGithub(repoName: string, fileUrl: string) {
     logger.info(
       `File ${fileUrl} uploaded successfully to repository ${repoName}`
     );
+
+    completed = true;
   } catch (error: any) {
+    completed = true;
+
     progressBar.stop();
 
     logger.error(
