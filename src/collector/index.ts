@@ -166,7 +166,7 @@ async function main() {
 
   // const movieDetails = await handleSinglePostDownload(browser, link);
 
-  // await browser.close();
+  await browser.close();
 
   await uploadMovieFromCollector({
     imdbDetails: {
@@ -179,7 +179,7 @@ async function main() {
     screenshots: ["https://img1", "https://img2"],
   });
 
-  return;
+  process.exit(0);
 
   console.log("Opening new page...");
   const page = await browser.newPage();

@@ -1,29 +1,59 @@
-import fs from "fs";
 import type { Request, Response } from "express";
-import path from "path";
+import fs from "fs";
 
-export async function streamVideo(req: Request, res: Response) {
-  const filePath = path.join(__dirname, "../../tmp/BigBuckBunny_640x360.m4v");
+export async function streamVideo(
+  metadata: { filePath: string },
+  req: Request,
+  res: Response
+) {
+  const { filePath } = metadata;
 
   const stat = fs.statSync(filePath);
 
-  const fileSize = stat.size;
+  let fileSize = stat.size;
 
-  const range = req.headers.range;
+  if (!stat.isFile()) {
+    res.status(404).send("File not found");
+    return;
+  }
 
-  let start = 0;
-  let end = fileSize - 1;
+  const range = req.headers.range || "bytes=0-";
 
-  if (range) {
-    const parts = range.replace(/bytes=/, "").split("-");
-    console.log("parts", parts);
-    start = parseInt(parts[0], 10);
-    end = parts[1] ? parseInt(parts[1], 10) : end;
+  let [start, end] = range
+    .replace(/bytes=/, "")
+    .split("-")
+    .map((x) => parseInt(x, 10));
+
+  // Wait for the file to reach the required content length
+  if (start >= stat.size) {
+    await new Promise<void>((resolve, reject) => {
+      console.log("Watching file for content length more than:", start);
+      fs.watchFile(filePath, (curr) => {
+        if (curr.size >= start) {
+          fs.unwatchFile(filePath);
+          fileSize = curr.size;
+          resolve();
+        }
+      });
+
+      setTimeout(() => {
+        fs.unwatchFile(filePath);
+        reject(
+          new Error(
+            "File size did not reach the required content length in time"
+          )
+        );
+      }, 1000000); // Timeout after 100 seconds
+    });
+  }
+
+  if (isNaN(end) || end === undefined) {
+    end = fileSize - 1;
   }
 
   const contentLength = end - start + 1;
 
-  console.log("start", start, "end", end);
+  console.log("start", start, "end", end, "fileSize", fileSize);
 
   res.setHeader("Content-Type", "video/mp4");
   res.setHeader("Content-Length", contentLength);
@@ -32,37 +62,40 @@ export async function streamVideo(req: Request, res: Response) {
   res.status(206);
 
   const stream = fs.createReadStream(filePath, {
-    highWaterMark: 2 * 1024 * 1024,
+    start,
+    end,
   });
 
-  const chunks: { chunk: ArrayBufferLike; size: number }[] = [];
+  stream.on("open", () => {
+    stream.pipe(res, { end: false });
+  });
 
-  for await (const chunk of stream) {
-    chunks.push({ chunk, size: chunk.length });
-  }
+  stream.on("error", (err) => {
+    console.error("Stream error", err);
+    res.status(500).send("Internal server error");
+  });
 
-  let bytesRead = 0;
-  for (const { chunk, size } of chunks) {
-    const chunkStart = bytesRead;
-    const chunkEnd = bytesRead + size - 1;
+  stream.on("end", () => {
+    res.end();
+  });
 
-    if (start > chunkEnd) {
-      bytesRead += size;
-      continue;
-    }
+  req.on("close", () => {
+    console.log("Request closed");
+    stream.close();
+  });
 
-    console.log("chunkStart", chunkStart, "chunkEnd", chunkEnd);
+  req.on("end", () => {
+    console.log("Request ended");
+    stream.close();
+  });
 
-    const chunkContent = Buffer.from(chunk);
+  req.on("aborted", () => {
+    console.log("Request aborted");
+    stream.close();
+  });
 
-    const sliceStart = Math.max(start - chunkStart, 0);
-    const sliceEnd = Math.min(end - chunkStart + 1, chunkContent.length);
-
-    console.log("sliceStart", sliceStart, "sliceEnd", sliceEnd);
-
-    res.write(chunkContent.subarray(sliceStart, sliceEnd));
-  }
-
-  res.end();
-  console.log("done");
+  req.on("error", (err) => {
+    console.error("Request error", err);
+    stream.close();
+  });
 }

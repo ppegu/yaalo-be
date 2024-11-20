@@ -7,7 +7,6 @@
   },
   "devDependencies": {
     "@tsconfig/node20": "^20.1.4",
-    "@types/bun": "latest",
     "@types/cli-progress": "^3.11.6",
     "@types/express": "^5.0.0",
     "@types/morgan": "^1.9.9",

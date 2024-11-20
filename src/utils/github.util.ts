@@ -7,6 +7,7 @@ import * as fs from "fs";
 import { Stream } from "stream";
 import { v4 as uuidv4 } from "uuid";
 import Logger from "./Logger";
+import { sleep } from "./async.util";
 
 dotenv.config();
 
@@ -74,12 +75,6 @@ export async function deleteGithubRepo(repoName: string) {
 
 export async function uploadFileToGithub(repoName: string, fileUrl: string) {
   const progressBar = new cliProgress.SingleBar({}, cliProgress.Presets.legacy);
-
-  let completed = false;
-
-  process.on("exit", () => {
-    console.log("exit");
-  });
 
   try {
     const octokit = new (await import("@octokit/rest")).Octokit({
@@ -156,11 +151,7 @@ export async function uploadFileToGithub(repoName: string, fileUrl: string) {
     logger.info(
       `File ${fileUrl} uploaded successfully to repository ${repoName}`
     );
-
-    completed = true;
   } catch (error: any) {
-    completed = true;
-
     progressBar.stop();
 
     logger.error(
@@ -212,6 +203,8 @@ export async function streamFileFromGithub(
 
     const range = req.headers.range || "bytes=0-";
 
+    console.log("range", range);
+
     let [start, end] = range
       .replace(/bytes=/, "")
       .split("-")
@@ -229,7 +222,7 @@ export async function streamFileFromGithub(
     res.setHeader("Content-Type", "video/mp4");
     res.setHeader("Accept-Ranges", "bytes");
     res.setHeader("Content-Length", contentLength);
-    res.setHeader("Content-Range", `bytes ${start}-${end}/${contentLength}`);
+    res.setHeader("Content-Range", `bytes ${start}-${end}/${metadata.size}`);
 
     const chunkIds: { id: string; size: number }[] = JSON.parse(
       Buffer.from(chunkIdsFile.content, "base64").toString()
@@ -251,14 +244,6 @@ export async function streamFileFromGithub(
           const chunkEnd = chunkSize - 1;
 
           if (start > chunkEnd) {
-            console.log(
-              "skipping chunk",
-              chunkId,
-              "start",
-              start,
-              "chunkEnd",
-              chunkEnd
-            );
             continue;
           }
 
@@ -289,5 +274,71 @@ export async function streamFileFromGithub(
       `Error streaming file from repository ${repoName}: ${error.message}`
     );
     throw error;
+  }
+}
+
+export async function downloadFileFromGithub(
+  repoName: string,
+  filePath: string
+) {
+  try {
+    const octokit = new (await import("@octokit/rest")).Octokit({
+      auth: GITHUB_TOKEN,
+    });
+
+    const [owner, repo] = repoName.split("/");
+
+    logger.info(`Fetching chunk IDs from repository ${repoName}`);
+
+    const [{ data: chunkIdsFile }, { data: metadataFile }]: any =
+      await Promise.all([
+        octokit.repos.getContent({
+          owner,
+          repo,
+          path: "chunkIds.json",
+        }),
+        octokit.repos.getContent({
+          owner,
+          repo,
+          path: "metadata.json",
+        }),
+      ]);
+
+    const metadata = JSON.parse(
+      Buffer.from(metadataFile.content, "base64").toString()
+    );
+
+    const chunkIds: { id: string; size: number }[] = JSON.parse(
+      Buffer.from(chunkIdsFile.content, "base64").toString()
+    );
+
+    (async () => {
+      const writeStream = fs.createWriteStream(filePath);
+      for (const { id: chunkId, size } of chunkIds) {
+        console.log("downloading chunk", chunkId, "size", size);
+
+        const download_url = `https://raw.githubusercontent.com/${repoName}/main/chunks/${chunkId}`;
+
+        const resp = await axios.get(download_url, {
+          responseType: "stream",
+        });
+
+        resp.data.pipe(writeStream, { end: false });
+
+        await new Promise((resolve) => {
+          resp.data.on("end", resolve);
+        });
+      }
+      writeStream.end();
+      logger.info(`File downloaded successfully to ${filePath}`);
+    })();
+
+    logger.info(`Downloading initiated ${repoName}`);
+    await sleep(2000);
+
+    return { fileSize: metadata.size };
+  } catch (error: any) {
+    console.error("Error downloading file from Github", error);
+    throw new Error("Error streaming");
   }
 }

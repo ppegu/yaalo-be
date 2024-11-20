@@ -10,6 +10,8 @@ interface IMovie {
   screenshots: string[];
   downloadLinks: { type: string; url: string }[];
   status: "active" | "inactive";
+  streamingLink?: string;
+  lastStreamedAt?: Date;
 }
 
 const schema: Schema = new Schema(
@@ -21,11 +23,13 @@ const schema: Schema = new Schema(
     screenshots: { type: [String], required: true },
     downloadLinks: { type: [], required: true },
     status: { type: String, enum: ["active", "inactive"], default: "active" },
+    streamingLink: { type: String },
+    lastStreamedAt: { type: Date },
   },
   { timestamps: true }
 );
 
-const Movie = mongoose.model<IMovie>("Movie", schema);
+const Movie = mongoose.model<IMovie & Document>("Movie", schema);
 
 export default Movie;
 
