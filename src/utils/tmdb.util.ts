@@ -10,8 +10,7 @@ export async function getMovieDetailsFromTmdb(movieTitle: string) {
   const searchData = searchResponse.data;
 
   if (searchData.results.length === 0) {
-    console.error("Movie not found on TMDB.");
-    return;
+    throw new Error("Movie not found on TMDB.");
   }
 
   const movieId = searchData.results[0].id;
@@ -19,8 +18,10 @@ export async function getMovieDetailsFromTmdb(movieTitle: string) {
   const detailsResponse = await axios.get(detailsUrl);
   const movieDetails = detailsResponse.data;
 
+  // console.log("movieDetails", movieDetails);
+
   return {
-    title: movieDetails?.original_title,
+    title: movieDetails?.title,
     description: movieDetails?.overview,
     releaseDate: movieDetails?.release_date,
   };

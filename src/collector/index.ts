@@ -1,46 +1,15 @@
+import { Option, program } from "commander";
 import dotenv from "dotenv";
 import type { Browser, Page } from "puppeteer";
 import puppeteer from "puppeteer";
 import { connectToDatabase } from "../utils/database.util";
 import { getMovieDetailsFromTmdb } from "../utils/tmdb.util";
 import { getHubcloudDownloadLink } from "./hubcloud.collector";
+import movies4u from "./movies4u";
 import { uploadMovieFromCollector } from "./upload.collector";
+import { selectDownloadableLink } from "./collector.util";
 
 dotenv.config();
-
-const MAX_DOWNLOAD_SIZE = 800;
-const MIN_DOWNLOAD_SIZE = 300;
-const MAX_UNIT = "MB";
-const MIN_UNIT = "MB";
-
-function selectDownloadableLink(sentences: string[]): number {
-  const fileSizeRegex = /(\d+(?:\.\d+)?)(\s?(GB|MB))/i;
-
-  const cleanedSentences = sentences.map((sentence) =>
-    sentence.replace(/\s+/g, " ")
-  );
-
-  for (let i = 0; i < cleanedSentences.length; i++) {
-    const match = cleanedSentences[i].match(fileSizeRegex);
-
-    if (match) {
-      const size = parseFloat(match[1]);
-      const unit = match[3].toUpperCase();
-
-      if (
-        unit === MAX_UNIT &&
-        size <= MAX_DOWNLOAD_SIZE &&
-        unit === MIN_UNIT &&
-        size >= MIN_DOWNLOAD_SIZE
-      ) {
-        console.log("unti:", unit, "size:", size);
-        return i;
-      }
-    }
-  }
-
-  return -1;
-}
 
 async function extractMovieDetails(page: Page) {
   const title = await page.evaluate(() => {
@@ -212,4 +181,42 @@ async function main() {
   await browser.close();
 }
 
-main();
+program
+  .addOption(
+    new Option("-p, --provider <type>")
+      .choices(["cinevood", "movies4u"])
+      .makeOptionMandatory()
+  )
+  .requiredOption("-l, --link <type>", "link of provider");
+
+program.parse(process.argv);
+
+const options = program.opts();
+
+console.log("Options: ", options);
+
+async function startProcess() {
+  await connectToDatabase();
+
+  console.log("Launching browser...");
+  const browser = await puppeteer.launch({
+    headless: true,
+    defaultViewport: null,
+    args: ["--no-sandbox", "--disable-setuid-sandbox"],
+  });
+  console.log("Browser launched.");
+
+  const link = options.link;
+
+  if (options.provider === "cinevood") {
+  } else if (options.provider === "movies4u") {
+    await movies4u.startScrapping(browser, link);
+  }
+
+  console.log("closing browser...");
+  await browser.close();
+
+  process.exit(0);
+}
+
+startProcess();
