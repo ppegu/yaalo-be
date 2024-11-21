@@ -1,12 +1,7 @@
-import { Browser, Page } from "puppeteer";
-import { DOMParser } from "xmldom";
+import {Browser, Page} from "puppeteer";
 import * as cheerio from "cheerio";
-import {
-  extractElementsLinks,
-  getDownloadableClearTexts,
-  selectDownloadableLink,
-} from "./collector.util";
-import { getMovieDetailsFromTmdb } from "../utils/tmdb.util";
+import {extractElementsLinks, getDownloadableClearTexts, selectDownloadableLink,} from "./collector.util";
+import {getMovieDetailsFromTmdb} from "../utils/tmdb.util";
 
 async function getArticles(page: Page) {
   console.log("Getting articles...");
