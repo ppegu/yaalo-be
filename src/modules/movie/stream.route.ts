@@ -1,10 +1,11 @@
 import { Router } from "express";
 import fs from "fs";
 import path from "path";
-import { DownloadLink, Movie, StreamableLink } from "../../models/MovieModels";
+import { DownloadLink, StreamableLink } from "../../models/MovieModels";
 import { downloadFileFromURL } from "../../utils/download.util";
 import Logger from "../../utils/Logger";
 import { AppResponse, NotFoundError } from "../../utils/response.util";
+import { streamVideo } from "../../utils/stream.util";
 import HubCloud from "../hubcloud/HubCloud";
 
 const logger = Logger.createLogger("movie.stream.route");
@@ -78,7 +79,7 @@ router.get("/:downloadLinkId/prepare", async (req, res, next) => {
         lastStreamedAt: new Date(),
         fileSize,
       },
-      { upsert: true }
+      { upsert: true, new: true }
     );
 
     if (!streamableLink) {
@@ -90,6 +91,30 @@ router.get("/:downloadLinkId/prepare", async (req, res, next) => {
         streamableLinkId: streamableLink._id,
       })
     );
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.get("/:streamableLinkId/stream", async (req, res, next) => {
+  try {
+    const { streamableLinkId } = req.params;
+
+    const streamableLink = await StreamableLink.findById(
+      streamableLinkId
+    ).lean();
+
+    if (!streamableLink) {
+      throw new NotFoundError("Movie streamable link not found");
+    }
+
+    const { link } = streamableLink;
+
+    if (!link) {
+      throw new NotFoundError("Stream link not found");
+    }
+
+    await streamVideo({ filePath: link }, req, res);
   } catch (error) {
     next(error);
   }

@@ -12,7 +12,7 @@ const downloadLinkSchema = new Schema<IDownloadLink>({
   episodeId: { type: Schema.Types.ObjectId, ref: "Episode" },
   quality: { type: String, required: true },
   links: { type: [String], required: true },
-  size: { type: String, required: true },
+  size: { type: Number, required: true },
   unit: { type: String, required: true },
   sentence: { type: String, required: true },
 });

@@ -38,14 +38,17 @@ export async function loadHTMLContentFromLink(
     return load(content);
   } else if (option.tool === "wget") {
     const content = await new Promise<string>((resolve, reject) => {
-      exec(`wget -O - ${link}`, (error: any, stdout: any, stderr: any) => {
-        if (error) {
-          console.error(`exec error: ${error}`);
-          reject(error);
-          return;
+      exec(
+        `wget --max-redirect=10 -O - ${link}`,
+        (error: any, stdout: any, stderr: any) => {
+          if (error) {
+            console.error(`exec error: ${error}`);
+            reject(error);
+            return;
+          }
+          resolve(stdout);
         }
-        resolve(stdout);
-      });
+      );
     });
     return load(content);
   } else {

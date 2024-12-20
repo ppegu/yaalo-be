@@ -15,7 +15,10 @@ export default class HubCloud {
   async generateDownloadPageLink() {
     logger.info("Generating download page link from:", this.link);
     const $ = await loadHTMLContentFromLink(this.link, {
-      tool: "wget",
+      tool: "puppeteer",
+      page: await this.browser.newPage(),
+      selector: ".tab-content",
+      timeout: 60000,
     });
 
     const scriptContent = $(".tab-content ").find("script").text();
@@ -78,6 +81,8 @@ export default class HubCloud {
     );
 
     const fileDownloadLink = await this.generateDownloadFileLink(finalPageLink);
+
+    await this.browser.close();
 
     return fileDownloadLink;
   }
