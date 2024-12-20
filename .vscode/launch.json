@@ -8,6 +8,20 @@
       "runtimeExecutable": "npm",
       "skipFiles": ["node_modules/**"],
       "type": "node"
+    },
+    {
+      "name": "Run Collector",
+      "request": "launch",
+      "runtimeArgs": [
+        "run",
+        "collector",
+        "--",
+        "--provider cinevood",
+        "--link https://1cinevood.digital/"
+      ],
+      "runtimeExecutable": "npm",
+      "skipFiles": ["node_modules/**"],
+      "type": "node"
     }
   ]
 }

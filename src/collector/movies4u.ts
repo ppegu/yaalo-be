@@ -1,7 +1,11 @@
-import {Browser, Page} from "puppeteer";
+import { Browser, Page } from "puppeteer";
 import * as cheerio from "cheerio";
-import {extractElementsLinks, getDownloadableClearTexts, selectDownloadableLink,} from "./collector.util";
-import {getMovieDetailsFromTmdb} from "../utils/tmdb.util";
+import {
+  extractElementsLinks,
+  getDownloadableClearTexts,
+  selectDownloadableLink,
+} from "./collector.util";
+import { getMovieDetailsFromTmdb } from "../utils/tmdb.util";
 
 async function getArticles(page: Page) {
   console.log("Getting articles...");
@@ -106,7 +110,10 @@ async function startScrapping(browser: Browser, websiteLink: string) {
 
   await page.waitForSelector("#main");
 
-  const aricles = await getArticles(page);
+  const content = await page.content();
+  const $ = cheerio.load(content);
+
+  const aricles = $("#main article").toArray();
 
   const articleLinks = extractElementsLinks(aricles, "h2 a");
 

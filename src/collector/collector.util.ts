@@ -1,17 +1,40 @@
 import * as cheerio from "cheerio";
+import { Element } from "domhandler";
+import { convertFileSize } from "../utils/file.util";
+import { DownloadLinkInfo } from "../@types/collector";
 
 export function extractElementsLinks(
-  elements: string[],
+  elements: Element[],
   selector: string,
   attr: string = "href"
 ) {
-  return elements
-      .map((element) => {
-        const $ = cheerio.load(element);
-        return $(selector).attr(attr);
-      })
-      .filter((link) => link !== null)
-      .filter((link) => link !== undefined);
+  const links = [];
+
+  for (const element of elements) {
+    const $ = cheerio.load(element);
+    const link = $(selector).attr(attr);
+    if (link) {
+      links.push(link);
+    }
+  }
+
+  return links;
+}
+
+export function extractTextsFromElements(
+  elements: Element[],
+  selector: string
+) {
+  const texts = [];
+  for (const element of elements) {
+    const $ = cheerio.load(element);
+    const text = $(selector).text();
+    if (text) {
+      texts.push(text);
+    }
+  }
+
+  return texts;
 }
 
 interface Options {
@@ -30,6 +53,21 @@ export function getDownloadableClearTexts(texts: string[]): string[] {
   return texts.map((text) => text.replace(/\s+/g, " "));
 }
 
+export function getDownloadSizeAndUnit(sentence: string) {
+  const fileSizeRegex = /(\d+(?:\.\d+)?)(\s?(GB|MB))/i;
+
+  const match = sentence.match(fileSizeRegex);
+
+  const size = parseFloat(match?.[1] || "0");
+  const unit = match?.[3].toUpperCase() || "MB";
+
+  return {
+    size,
+    unit,
+    sizeInMB: convertFileSize(size, unit, "MB"),
+  };
+}
+
 export function selectDownloadableLink(
   sentences: string[],
   options: Options | undefined = {
@@ -39,39 +77,77 @@ export function selectDownloadableLink(
     minUnit: MIN_UNIT,
   }
 ): number {
+  /**
+   * A regular expression to match file size strings.
+   *
+   * This regex captures file sizes in gigabytes (GB) or megabytes (MB).
+   * It matches a number (which can be an integer or a decimal) followed by an optional space and the unit (GB or MB).
+   *
+   * The regex has three capturing groups:
+   * 1. The numeric part of the file size, which can be an integer or a decimal.
+   * 2. An optional space between the numeric part and the unit.
+   * 3. The unit of the file size, which can be either 'GB' or 'MB'.
+   *
+   * Example matches:
+   * - "10GB"
+   * - "10 GB"
+   * - "10.5GB"
+   * - "10.5 GB"
+   * - "500MB"
+   * - "500 MB"
+   */
   const fileSizeRegex = /(\d+(?:\.\d+)?)(\s?(GB|MB))/i;
 
   const cleanedSentences = sentences.map((sentence) =>
     sentence.replace(/\s+/g, " ")
   );
 
+  let downloadableIndex = -1;
+  let downloadableSize = 0;
+
   for (let i = 0; i < cleanedSentences.length; i++) {
     const match = cleanedSentences[i].match(fileSizeRegex);
 
-    if (match) {
-      const size = parseFloat(match[1]);
-      const unit = match[3].toUpperCase();
+    if (!match) continue;
 
-      // check for min size
-      if (unit === options.minUnit && size >= options.minSize) {
-        return i;
+    const size = parseFloat(match[1]);
+    const unit = match[3].toUpperCase();
+
+    const sizeInMB = convertFileSize(size, unit, "MB");
+
+    // check for max size
+    if (unit === options.maxUnit && size <= options.maxSize) {
+      if (downloadableSize < sizeInMB) {
+        downloadableIndex = i;
+        downloadableSize = sizeInMB;
       }
+    }
 
-      // check for max size
-      if (unit === options.maxUnit && size <= options.maxSize) {
-        return i;
+    // check for min size
+    else if (unit === options.minUnit && size >= options.minSize) {
+      if (downloadableSize < sizeInMB) {
+        downloadableIndex = i;
+        downloadableSize = sizeInMB;
       }
-
-      //   if (
-      //     unit === options.maxUnit &&
-      //     size <= options.maxSize &&
-      //     unit === options.minUnit &&
-      //     size >= options.minSize
-      //   ) {
-      //     return i;
-      //   }
     }
   }
 
-  return -1;
+  return downloadableIndex;
+}
+
+export function getDownloadLinkInfo(links: any[]): DownloadLinkInfo[] {
+  const supportedQualities = ["1080p", "720p", "480p"];
+
+  return links
+    .map(({ sentence, ...rest }) => {
+      const fileInfo = getDownloadSizeAndUnit(sentence);
+      const quality = supportedQualities.find((q) => sentence.includes(q));
+      return {
+        quality,
+        sentence,
+        ...rest,
+        ...fileInfo,
+      };
+    })
+    .filter((quality) => quality.quality && quality.size > 0);
 }
