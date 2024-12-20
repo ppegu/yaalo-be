@@ -11,7 +11,8 @@
     "types": ["node", "express"],
     "checkJs": false,
     "lib": ["dom", "esnext"],
-    "typeRoots": ["src/types", "node_modules/@types"]
+    "typeRoots": ["src/types", "node_modules/@types"],
+    "sourceMap": true
   },
   "files": []
 }

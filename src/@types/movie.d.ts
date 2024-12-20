@@ -10,8 +10,8 @@ export interface IDownloadLink extends Document {
   episodeId?: Types.ObjectId;
   quality: string;
   links: string[];
-  size: string;
-  unit: string;
+  size: number;
+  unit: "B" | "KB" | "MB" | "GB" | "TB";
   sentence: string;
 }
 

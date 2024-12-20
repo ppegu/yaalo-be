@@ -2,26 +2,22 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "Launch server",
+      "name": "Debug Server",
+      "type": "node",
       "request": "launch",
-      "runtimeArgs": ["run", "dev"],
-      "runtimeExecutable": "npm",
-      "skipFiles": ["node_modules/**"],
-      "type": "node"
-    },
-    {
-      "name": "Run Collector",
-      "request": "launch",
-      "runtimeArgs": [
-        "run",
-        "collector",
-        "--",
-        "--provider cinevood",
-        "--link https://1cinevood.digital/"
+      "runtimeArgs": ["--watch", "${workspaceFolder}/src/index.ts"],
+      "runtimeExecutable": "bun",
+      "skipFiles": [
+        "<node_internals>/**",
+        "node_modules/**",
+        "src/@types/**",
+        "src/**/*.d.ts"
       ],
-      "runtimeExecutable": "npm",
-      "skipFiles": ["node_modules/**"],
-      "type": "node"
+      "console": "internalConsole",
+      "env": {
+        "DEBUG": "true"
+      },
+      "outputCapture": "std"
     }
   ]
 }

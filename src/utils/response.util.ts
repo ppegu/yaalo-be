@@ -1,4 +1,4 @@
-import type { Request, Response, NextFunction } from "express";
+import type { NextFunction, Request, Response } from "express";
 
 // Define a generic error class
 export class AppError extends Error {
@@ -62,12 +62,26 @@ export class AppResponse {
 // Success response middleware
 export const successHandler = (
   response: AppResponse,
-  req: Request,
+  _req: Request,
   res: Response,
-  next: NextFunction
+  _next: NextFunction
 ) => {
   const status = response.status || 200;
   const message = response.message || "Success";
+
   const data = response.data || null;
   res.status(status).json({ status, message, data });
 };
+
+export function responseHandler(
+  response: AppResponse | AppError | Error,
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  if (response instanceof AppResponse) {
+    successHandler(response, req, res, next);
+  } else {
+    errorHandler(response, req, res, next);
+  }
+}

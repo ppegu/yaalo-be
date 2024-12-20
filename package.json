@@ -3,6 +3,7 @@
   "main": "src/index.ts",
   "scripts": {
     "dev": "nodemon --watch 'src/**/*.ts'  --watch 'src/**/*.json' --exec 'ts-node' -r dotenv/config ./src/index.ts",
+    "start": "bun src/index.ts",
     "collector": "bun src/collector/index.ts"
   },
   "devDependencies": {

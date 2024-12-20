@@ -9,8 +9,8 @@
  */
 export function convertFileSize(
   value: number,
-  fromUnit: string,
-  toUnit: string
+  fromUnit: "B" | "KB" | "MB" | "GB" | "TB",
+  toUnit: "B" | "KB" | "MB" | "GB" | "TB"
 ): number {
   const units = ["B", "KB", "MB", "GB", "TB"];
   const fromIndex = units.indexOf(fromUnit.toUpperCase());

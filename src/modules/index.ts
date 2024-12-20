@@ -1,7 +1,7 @@
 import express from "express";
 import fs from "fs";
 import path from "path";
-import { errorHandler, successHandler } from "../utils/response.util";
+import { responseHandler } from "../utils/response.util";
 
 const router = express.Router();
 
@@ -46,7 +46,6 @@ const loadRoutes = (dir: string, basePath: string = "") => {
 loadRoutes(__dirname);
 console.log(`registered ${routeCounts} routes`);
 
-router.use(errorHandler);
-router.use(successHandler);
+router.use(responseHandler);
 
 export default router;
