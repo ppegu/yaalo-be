@@ -9,7 +9,7 @@ export async function loadHTMLContentFromLink(
   link: string,
   option: {
     closePageAfterLoad?: true;
-    timeout?: 100000;
+    timeout?: number;
     selector?: string;
     page?: Page;
     tool: "wget" | "puppeteer";

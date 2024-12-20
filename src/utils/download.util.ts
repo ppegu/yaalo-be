@@ -5,16 +5,16 @@ import * as path from "path";
 
 export async function downloadFileFromURL(
   url: string,
-  fileId: string
-): Promise<string> {
-  const tmpDir = path.resolve(__dirname, "../../tmp");
-  if (!fs.existsSync(tmpDir)) {
-    fs.mkdirSync(tmpDir, { recursive: true });
+  downloadDir: string,
+  fileName: string
+): Promise<{ totalSize: number; filePath: string }> {
+  if (!fs.existsSync(downloadDir)) {
+    fs.mkdirSync(downloadDir, { recursive: true });
   }
 
-  const filePath = path.join(tmpDir, fileId);
   console.log(`Starting download...`);
 
+  const filePath = path.join(downloadDir, fileName);
   const progressBar = new cliProgress.SingleBar({}, cliProgress.Presets.legacy);
 
   return new Promise((resolve, reject) => {
@@ -28,18 +28,26 @@ export async function downloadFileFromURL(
 
         progressBar.start(totalSize, 0);
 
-        let downloadedSize = 0;
+        response.pipe(file);
 
+        let downloadedSize = 0;
         response.on("data", (chunk) => {
           downloadedSize += chunk.length;
+
+          if (totalSize > 0 && downloadedSize > 0) {
+            resolve({
+              totalSize,
+              filePath,
+            });
+          }
+
           const progress = downloadedSize;
           progressBar.update(Number(progress));
         });
 
-        response.pipe(file);
         file.on("finish", () => {
           console.log(`\nDownload completed for ${filePath}`);
-          file.close(() => resolve(filePath));
+          // file.close(() => resolve(filePath));
           progressBar.stop();
         });
       })

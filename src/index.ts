@@ -2,7 +2,7 @@ import dotenv from "dotenv";
 import express from "express";
 import morgan from "morgan";
 import { connectToDatabase } from "./utils/database.util";
-import router from "./features";
+import router from "./modules";
 
 dotenv.config();
 

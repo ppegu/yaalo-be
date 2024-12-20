@@ -47,18 +47,32 @@ export default class CineVood {
   async insertMoviesToDatabase(movies: ScrappedMovie[]) {
     await connectToDatabase();
 
-    const insertedLinks = await DownloadLink.insertMany(
-      movies.flatMap((movie) => movie.downloadLinks)
-    );
-
     const preparedMovies = movies.map((movie) => {
-      return {
+      const movieDoc = new Movie({
         ...movie.movieInfo,
-        downloadLinks: insertedLinks.map((link) => link._id),
+      });
+      return {
+        movieDoc,
+        downloadLinks: movie.downloadLinks.map(
+          (downloadLink) =>
+            new DownloadLink({
+              movieId: movieDoc._id,
+              ...downloadLink,
+            })
+        ),
       };
     });
 
-    const insertedDocs = await Movie.insertMany(preparedMovies);
+    const [downloadLinksResult, insertedDocs] = await Promise.all([
+      DownloadLink.insertMany(preparedMovies.flatMap((m) => m.downloadLinks)),
+      Movie.insertMany(preparedMovies.map((m) => m.movieDoc)),
+    ]);
+
+    logger.info(
+      "Download links inserted",
+      downloadLinksResult.length,
+      "to the database."
+    );
     logger.info("Movies inserted", insertedDocs.length, "to the database.");
   }
 
@@ -163,6 +177,7 @@ export default class CineVood {
         if (movie) {
           movies.push(movie);
         }
+        break;
       }
 
       logger.info("Extracted", movies.length, "from the articles.");
@@ -171,3 +186,11 @@ export default class CineVood {
     }
   }
 }
+
+async function _test() {
+  const cineVood = new CineVood("https://1cinevood.digital/", "wget");
+
+  await cineVood.startScrapping();
+}
+
+// _test();

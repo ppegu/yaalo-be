@@ -6,11 +6,21 @@ export interface IWatching {
 }
 
 export interface IDownloadLink extends Document {
+  movieId: Types.ObjectId;
+  episodeId?: Types.ObjectId;
   quality: string;
   links: string[];
   size: string;
   unit: string;
   sentence: string;
+}
+
+export interface IStreamableLink extends Document {
+  movieId: Types.ObjectId;
+  downloadLinkId: Types.ObjectId;
+  link: string;
+  lastStreamedAt: Date;
+  fileSize: number;
 }
 
 export interface IMovieBasicDetails {
@@ -19,7 +29,6 @@ export interface IMovieBasicDetails {
   releaseDate: Date;
   duration?: number;
   poster: string;
-  downloadLinks: Types.ObjectId[];
 }
 
 export interface IMovie extends IWatching, IMovieBasicDetails, Document {
