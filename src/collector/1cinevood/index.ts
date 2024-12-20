@@ -2,20 +2,22 @@ import * as cheerio from "cheerio";
 import { Browser } from "puppeteer";
 import { DownloadLinkInfo, ScrappedMovie } from "../../@types/collector";
 import { DownloadLink, Movie } from "../../models/MovieModels";
-import { loadContent } from "../../utils/cheerio.util";
 import { connectToDatabase } from "../../utils/database.util";
 import Logger from "../../utils/Logger";
 import { getMovieDetailsFromTmdb } from "../../utils/tmdb.util";
 import { extractElementsLinks, getDownloadLinkInfo } from "../collector.util";
+import { loadHTMLContentFromLink } from "../content.collector";
 
 const logger = Logger.createLogger("cinevood");
 
 export default class CineVood {
   websiteLink: string;
-  browser: Browser;
+  browser?: Browser;
+  tool: "wget" | "puppeteer";
 
-  constructor(websiteLink: string) {
+  constructor(websiteLink: string, tool: "wget" | "puppeteer") {
     this.websiteLink = websiteLink;
+    this.tool = tool;
   }
 
   async getDownloadLinksFromArticle(
@@ -64,9 +66,7 @@ export default class CineVood {
     try {
       logger.info("Extracting movie details");
 
-      const page = await this.browser.newPage();
-
-      const $ = await loadContent(page, link, ".post-single-content");
+      const $ = await this.loadContent(link, ".post-single-content");
 
       const title = $("#movie_title").text();
 
@@ -92,38 +92,82 @@ export default class CineVood {
     }
   }
 
-  async startScrapping(browser: Browser) {
-    this.browser = browser;
+  async loadContent(link: string, selector: string, options = {}) {
+    logger.info("Loading content from link:", link);
+    const finalOptions = {
+      tool: this.tool,
+      ...options,
+    };
+    return loadHTMLContentFromLink(link, {
+      ...(finalOptions.tool === "puppeteer" && {
+        page: await this.browser?.newPage(),
+        closePageAfterLoad: true,
+        timeout: 100000,
+      }),
+      selector,
+      ...finalOptions,
+    });
+  }
+
+  async startScrapping(browser?: Browser) {
+    if (this.tool === "puppeteer") {
+      if (!browser) {
+        throw new Error("Browser is not provided.");
+      }
+      this.browser = browser;
+    }
 
     logger.info("Starting scrapping...");
 
-    const page = await browser.newPage();
     /** load all the contents and get the article links */
-    const $ = await loadContent(page, this.websiteLink, "#content_box");
-    const articles = $("#content_box article").toArray();
-    const articleLinks = extractElementsLinks(articles, "a");
+    const $ = await this.loadContent(this.websiteLink, "#content_box");
 
-    // const articleLinks = [
-    //   "https://1cinevood.digital/the-lord-of-the-rings-the-war-of-the-rohirrim-2024-hdts-english-1080p-avc-aac-2-0/",
-    //   "https://1cinevood.digital/kraven-the-hunter-2024-hdrip-1080p-hindi-english-x264-aac-hc-sub/",
-    //   "https://1cinevood.digital/zero-se-restart-2024-hindi-hdtc-1080p-x264-aac/",
-    //   "https://1cinevood.digital/pushpa-2-the-rule-2024-hdtc-1080p-hindi-multi-x264-aac-hc-esub-full-movie/",
-    // ];
+    const contentbox = $("#content_box");
 
-    logger.log("Found article links: ", articleLinks.length);
+    // second last element tells the total page numbers
+    const totalPageText = contentbox
+      .find("nav")
+      .find(".page-numbers")
+      .last()
+      .prev()
+      .text();
 
-    const movies: ScrappedMovie[] = [];
+    const totalPages = Number(totalPageText);
 
-    for (const articleLink of articleLinks) {
-      const movie = await this.getMovieDetails(articleLink);
-      if (movie) {
-        movies.push(movie);
-      }
-      break;
+    logger.info("Found Total pages: ", totalPages);
+
+    if (isNaN(totalPages)) {
+      throw new Error("Total pages not found");
     }
 
-    logger.info("Extracted", movies.length, "from the articles.");
+    for (let i = 1; i < totalPages; i++) {
+      let articles;
 
-    await this.insertMoviesToDatabase(movies);
+      if (i > 1) {
+        const pageLink = `${this.websiteLink}/page/${i}/`;
+        const $ = await this.loadContent(pageLink, "#content_box");
+        articles = $("#content_box").find("article").toArray();
+      } else {
+        articles = contentbox.find("article").toArray();
+      }
+
+      logger.info("extracting article links from page:", i);
+      const articleLinks = extractElementsLinks(articles, "a");
+
+      logger.log("Found article links: ", articleLinks.length);
+
+      const movies: ScrappedMovie[] = [];
+
+      for (const articleLink of articleLinks) {
+        const movie = await this.getMovieDetails(articleLink);
+        if (movie) {
+          movies.push(movie);
+        }
+      }
+
+      logger.info("Extracted", movies.length, "from the articles.");
+
+      await this.insertMoviesToDatabase(movies);
+    }
   }
 }

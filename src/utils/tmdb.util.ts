@@ -6,6 +6,7 @@ export type TmdbMovie = {
   releaseDate: Date;
   poster: string;
   genres: string[] | undefined;
+  duration: number;
 };
 
 export async function getMovieDetailsFromTmdb(
@@ -32,11 +33,16 @@ export async function getMovieDetailsFromTmdb(
     throw new Error("Movie details not found.");
   }
 
+  // console.log("Movie details from TMDB:", movieDetails);
+
   return {
     title: movieDetails.title,
     description: movieDetails.overview,
-    releaseDate: new Date(movieDetails.release_date),
+    ...(movieDetails.release_date && {
+      releaseDate: new Date(movieDetails.release_date),
+    }),
     poster: `https://image.tmdb.org/t/p/original${movieDetails.poster_path}`,
     genres: movieDetails.genres?.map((genre: { name: string }) => genre.name),
+    duration: movieDetails.runtime,
   };
 }

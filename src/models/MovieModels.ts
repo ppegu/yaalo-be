@@ -12,7 +12,7 @@ const downloadLinkSchema = new Schema<IDownloadLink>({
 const MovieBasicDetailsSchema = new Schema({
   title: { type: String, required: true },
   description: { type: String },
-  releaseDate: { type: Date, required: true },
+  releaseDate: { type: Date },
   duration: { type: Number, default: 0 },
   poster: { type: String, required: true },
   downloadLinks: [{ type: Schema.Types.ObjectId, ref: "DownloadLink" }],
