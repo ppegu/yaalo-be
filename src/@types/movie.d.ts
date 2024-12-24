@@ -29,6 +29,7 @@ export interface IMovieBasicDetails {
   releaseDate: Date;
   duration?: number;
   poster: string;
+  playCount?: number;
 }
 
 export interface IMovie extends IWatching, IMovieBasicDetails, Document {

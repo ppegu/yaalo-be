@@ -87,9 +87,7 @@ router.get("/:downloadLinkId/prepare", async (req, res, next) => {
     }
 
     next(
-      new AppResponse(202, "Movie Prepared for streaming.", {
-        streamableLinkId: streamableLink._id,
-      })
+      new AppResponse(202, "Movie Prepared for streaming.", streamableLink._id)
     );
   } catch (error) {
     next(error);

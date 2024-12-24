@@ -70,7 +70,7 @@ export const successHandler = (
   const message = response.message || "Success";
 
   const data = response.data || null;
-  res.status(status).json({ status, message, data });
+  res.status(status).json({ status, message, response: data });
 };
 
 export function responseHandler(

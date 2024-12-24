@@ -31,6 +31,7 @@ const MovieBasicDetailsSchema = new Schema({
   releaseDate: { type: Date },
   duration: { type: Number, default: 0 },
   poster: { type: String, required: true },
+  playCount: { type: Number, default: 0 },
 });
 
 const MovieSchema = new Schema<IMovie>({

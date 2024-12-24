@@ -2,6 +2,24 @@
   "version": "0.2.0",
   "configurations": [
     {
+      "name": "Start Server",
+      "type": "node",
+      "request": "launch",
+      "runtimeArgs": ["run", "start"],
+      "runtimeExecutable": "npm",
+      "skipFiles": [
+        "<node_internals>/**",
+        "node_modules/**",
+        "src/@types/**",
+        "src/**/*.d.ts"
+      ],
+      "console": "internalConsole",
+      "env": {
+        "DEBUG": "true"
+      },
+      "outputCapture": "std"
+    },
+    {
       "name": "Debug Server",
       "type": "node",
       "request": "launch",

@@ -19,6 +19,30 @@ router.get("/", async (_req: Request, res: Response, next: NextFunction) => {
   }
 });
 
+router.get(
+  "/related-movies",
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { movieId } = req.query;
+
+      const movie = await Movie.findById(movieId);
+
+      if (!movie) {
+        throw new NotFoundError("Movie not found");
+      }
+
+      const movies = await Movie.find({
+        _id: { $ne: movie._id },
+        genres: { $in: movie.genres },
+      }).lean();
+
+      next(new AppResponse(200, "Movies fetched successfully", movies));
+    } catch (error: any) {
+      next(error);
+    }
+  }
+);
+
 // Get a single movie by ID
 router.get("/:id", async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -58,16 +82,16 @@ router.get(
 
       const downloadLinks = await DownloadLink.find({ movieId });
 
-      const qualities = downloadLinks.map((link) => ({
-        quality: link.quality,
-        qualityId: link._id,
-        size: convertFileSize(link.size, link.unit, "B"),
-        unit: "B",
-      }));
+      const qualities = downloadLinks
+        .map((link) => ({
+          quality: link.quality,
+          qualityId: link._id,
+          size: convertFileSize(link.size, link.unit, "B"),
+          unit: "B",
+        }))
+        .sort((a, b) => a.size - b.size);
 
-      next(
-        new AppResponse(200, "Qualities fetched successfully", { qualities })
-      );
+      next(new AppResponse(200, "Qualities fetched successfully", qualities));
     } catch (error: any) {
       next(error);
     }
