@@ -20,11 +20,21 @@
       "outputCapture": "std"
     },
     {
-      "name": "Debug Server",
+      "name": "Debug collector",
       "type": "node",
       "request": "launch",
-      "runtimeArgs": ["--watch", "${workspaceFolder}/src/index.ts"],
-      "runtimeExecutable": "bun",
+      "runtimeArgs": [
+        "run",
+        "collector",
+        "--",
+        "-p",
+        "cinevood",
+        "-l",
+        "https://1cinevood.city/",
+        "-t",
+        "wget"
+      ],
+      "runtimeExecutable": "npm",
       "skipFiles": [
         "<node_internals>/**",
         "node_modules/**",

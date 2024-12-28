@@ -7,6 +7,7 @@ import Logger from "../../utils/Logger";
 import { getMovieDetailsFromTmdb } from "../../utils/tmdb.util";
 import { extractElementsLinks, getDownloadLinkInfo } from "../collector.util";
 import { loadHTMLContentFromLink } from "../content.collector";
+import get1CineVoodMovieInfo from "./get1CineVoodMovieInfo";
 
 const logger = Logger.createLogger("cinevood");
 
@@ -21,7 +22,8 @@ export default class CineVood {
   }
 
   async getDownloadLinksFromArticle(
-    $: cheerio.CheerioAPI
+    $: cheerio.CheerioAPI,
+    isTv?: boolean
   ): Promise<DownloadLinkInfo[]> {
     const centerTag = $(".post-single-content center");
 
@@ -32,12 +34,28 @@ export default class CineVood {
         const downloadLinkElement = $(element).next("p");
         const aTags = downloadLinkElement.find("a");
         const hrefs = aTags.map((_, a) => $(a).attr("href")).get();
-        return {
-          links: hrefs,
-          sentence: $(element).find("span").text(),
-        };
+
+        if (hrefs.length) {
+          return {
+            links: hrefs,
+            sentence: $(element).find("span").text().trim(),
+          };
+        }
+
+        if (isTv) {
+          const tvATags = $(element).next("a");
+          const tvHrefs = tvATags.map((_, a) => $(a).attr("href")).get();
+          if (tvHrefs.length) {
+            return {
+              links: tvHrefs,
+              sentence: $(element).find("span").text().trim(),
+            };
+          }
+        }
+        return null;
       })
-      .get();
+      .get()
+      .filter((link) => link !== null);
 
     const links = getDownloadLinkInfo(downloadableLinks);
 
@@ -82,19 +100,13 @@ export default class CineVood {
 
       const $ = await this.loadContent(link, ".post-single-content");
 
-      const title = $("#movie_title").text();
-
-      if (!title) {
-        logger.error("Title not found for the article.");
-        return;
-      }
-
-      // get the details from TMDB
-      logger.log("Getting movie details from TMDB:", title);
-      const movieInfo = await getMovieDetailsFromTmdb(title);
+      const movieInfo = await get1CineVoodMovieInfo($);
 
       logger.log("getting download links for:", movieInfo.title);
-      const downloadLinks = await this.getDownloadLinksFromArticle($);
+      const downloadLinks = await this.getDownloadLinksFromArticle(
+        $,
+        movieInfo.isTv
+      );
 
       return {
         downloadLinks,
@@ -146,7 +158,7 @@ export default class CineVood {
       .prev()
       .text();
 
-    const totalPages = Number(totalPageText);
+    const totalPages = 1 || Number(totalPageText);
 
     logger.info("Found Total pages: ", totalPages);
 
@@ -154,7 +166,7 @@ export default class CineVood {
       throw new Error("Total pages not found");
     }
 
-    for (let i = 1; i < totalPages; i++) {
+    for (let i = 1; i <= totalPages; i++) {
       let articles;
 
       if (i > 1) {
@@ -170,19 +182,21 @@ export default class CineVood {
 
       logger.log("Found article links: ", articleLinks.length);
 
-      const movies: ScrappedMovie[] = [];
+      await this.getMovieDetails(articleLinks[2]);
 
-      for (const articleLink of articleLinks) {
-        const movie = await this.getMovieDetails(articleLink);
-        if (movie) {
-          movies.push(movie);
-        }
-        break;
-      }
+      // const movies: ScrappedMovie[] = [];
 
-      logger.info("Extracted", movies.length, "from the articles.");
+      // for (const articleLink of articleLinks) {
+      //   const movie = await this.getMovieDetails(articleLink);
+      //   if (movie) {
+      //     movies.push(movie);
+      //   }
+      //   break;
+      // }
 
-      await this.insertMoviesToDatabase(movies);
+      // logger.info("Extracted", movies.length, "from the articles.");
+
+      // await this.insertMoviesToDatabase(movies);
     }
   }
 }

@@ -1,7 +1,7 @@
 import * as cheerio from "cheerio";
 import { Element } from "domhandler";
-import { convertFileSize } from "../utils/file.util";
 import { DownloadLinkInfo } from "../@types/collector";
+import { convertFileSize } from "../utils/file.util";
 
 export function extractElementsLinks(
   elements: Element[],
@@ -59,7 +59,7 @@ export function getDownloadSizeAndUnit(sentence: string) {
   const match = sentence.match(fileSizeRegex);
 
   const size = parseFloat(match?.[1] || "0");
-  const unit = match?.[3].toUpperCase() || "MB";
+  const unit: any = match?.[3].toUpperCase() || "MB";
 
   return {
     size,
@@ -111,7 +111,7 @@ export function selectDownloadableLink(
     if (!match) continue;
 
     const size = parseFloat(match[1]);
-    const unit = match[3].toUpperCase();
+    const unit: any = match[3].toUpperCase();
 
     const sizeInMB = convertFileSize(size, unit, "MB");
 
